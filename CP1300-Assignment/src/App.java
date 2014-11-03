@@ -1,36 +1,37 @@
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-import java.awt.event.MouseListener;
 
 import javax.swing.JOptionPane;
 import javax.swing.SwingUtilities;
 
 import data.Cell;
-import data.Difficulty;
+import data.Cell.Contents;
 import data.Field;
-import data.Flag;
+import data.Field.Difficulty;
+import display.GameDisplay;
 import display.MainFrame;
 
 public class App {
 
-	private static MainFrame display;
+	private static MainFrame mainFrame;
+	private static GameDisplay gameDisplay;
 
 	static {
-		new Field(); // Model
-		display = new MainFrame(); // View
+		new Field();
+		gameDisplay = new GameDisplay();
+		mainFrame = new MainFrame(gameDisplay); 
 	}
 
-	// Controller
 	public static void main(String[] args) {
 		SwingUtilities.invokeLater(new Runnable() {
 
 			@Override
 			public void run() {
-				
+
 				// Add event handlers to GUI objects
-				
-				display.addSizeHandler(new ActionListener() {
+				mainFrame.addSizeHandler(new ActionListener() {
 					// Handle grid-size change requests
 
 					@Override
@@ -39,7 +40,7 @@ public class App {
 					}
 				});
 
-				display.addDifficultyHandler(new ActionListener() {
+				mainFrame.addDifficultyHandler(new ActionListener() {
 					// Handle difficulty change requests
 
 					@Override
@@ -58,75 +59,59 @@ public class App {
 					}
 				});
 
-				display.addCellHandler(new MouseListener() {
+				mainFrame.addCellHandler(new MouseAdapter() {
 					// Handle cell clicks
 
 					@Override
-					public void mouseClicked(MouseEvent e) {
+					public void mouseReleased(MouseEvent e) {
+						
 						if (!Field.isPlaying()) {
-							JOptionPane.showMessageDialog(display,
+							// Prompt user if game not active
+							JOptionPane.showMessageDialog(mainFrame,
 									"not playing");
 							return;
 						}
 
-						// Reveal selected cell from x,y coordinate of mouse
-						// click
-						Cell selectedCell = display.gameDisplay.reveal(
-								e.getX(), e.getY());
+						// Reveal cell from x,y coordinate of mouse click
+						int column = (int) (e.getX() / (double) gameDisplay.getWidth() * Field.getSize().width);
+						int row = (int) (e.getY() / (double) gameDisplay.getHeight() * Field.getSize().height);						
+						Cell selectedCell = Field.getCell(column, row);
+						selectedCell.reveal();
 
-						if (selectedCell instanceof Flag) {
+						if (selectedCell.getContents() == Contents.FALSE_FLAG) {
 							// Reveal all cells
 							for (Cell cell : Field.getCellList()) {
 								cell.reveal();
 							}
 							Field.endGame();
-							JOptionPane.showMessageDialog(display, "game over");
+							JOptionPane.showMessageDialog(mainFrame, "game over");
 						}
 
 						// Check if player has cleared all non-flag cells
 						if (Field.isClear()) {
 							Field.endGame();
-							JOptionPane.showMessageDialog(display,
+							JOptionPane.showMessageDialog(mainFrame,
 									"you completed the game!");
 						}
-					}
-
-					@Override
-					public void mouseEntered(MouseEvent e) {
-						// Do nothing
-					}
-
-					@Override
-					public void mouseExited(MouseEvent e) {
-						// Do nothing
-					}
-
-					@Override
-					public void mousePressed(MouseEvent e) {
-						// Do nothing
-					}
-
-					@Override
-					public void mouseReleased(MouseEvent e) {
-						// Do nothing
+						gameDisplay.repaint();
 					}
 				});
-				
+
 				// Display GUI
-				display.setVisible(true); 
+				mainFrame.setVisible(true);
 			}
 		});
 	}
 
-	private static void reset(int[] difficulty) {
+	private static void reset(Difficulty difficulty) {
 		// Start a new game of current size and chosen difficulty
-		new Field(display.getSizeSetting(), difficulty);
-		display.reset();
+		new Field(mainFrame.getSizeSetting(), difficulty);
+		mainFrame.reset();
 	}
 
 	private static void reset() {
 		// Start a new game of chosen size and current difficulty
-		new Field(display.getSizeSetting(), Difficulty.getChoice());
-		display.reset();
+		new Field(mainFrame.getSizeSetting(), Field.getDifficulty());
+		mainFrame.reset();
 	}
 }

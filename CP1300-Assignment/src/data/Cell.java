@@ -4,69 +4,106 @@ import java.util.ArrayList;
 
 public class Cell {
 
-	public static final String HIDDEN_COLOR = "0xeeeeee";
-	static final String DEFAULT_COLOR = "0x77f33b";
-	static final String ADJACENT_OBJECT_COLOR = "0x808080";
-	static final String EMPTY_CELL_SYMBOL = "%d/%d";
+	public enum Contents {
+		EMPTY("0/0", "0x77f33b"), HAS_ADJACENT("%d/%d", "0x808080"), TRUE_FLAG(
+				"T", "0x0044f7"), FALSE_FLAG("F", "0xec402c");
 
-	private static int revealedCount;
-	
-	protected String symbol;
-	protected String revealedColor;
-	
-	private ArrayList<Cell> adjacentCells;
-	private int adjacentFlags;
-	private int adjacentTreasure;
-	private boolean revealed;
-	
-	public Cell() {
-		symbol = String.format(EMPTY_CELL_SYMBOL, adjacentFlags, adjacentTreasure);
-		revealedColor = DEFAULT_COLOR;
+		private String symbol, color;
+
+		Contents(String symbol, String color) {
+			this.symbol = symbol;
+			this.color = color;
+		}
+
+		public String getSymbol() {
+			return symbol;
+		}
+
+		public String getColor() {
+			return color;
+		}
 	}
 
-	public static int getRevealedCount() {
+	private Contents contents;
+	private ArrayList<Cell> adjacentCells;
+	private int adjacentFalseFlags;
+	private int adjacentTrueFlags;
+	private boolean revealed;
+	private static int revealedCount = 0;
+
+	Cell(Contents cellType) {
+		contents = cellType;
+	}
+
+	void setAdjacentCells(ArrayList<Cell> adjacentCells) {
+		this.adjacentCells = adjacentCells;
+		updateContents();
+	}
+
+	void updateContents() {
+		for (Cell adjacentCell : adjacentCells) {
+			if (adjacentCell.getContents() == Contents.TRUE_FLAG
+					|| adjacentCell.getContents() == Contents.FALSE_FLAG) {
+				contents = Contents.HAS_ADJACENT;
+				updateAdjacentCellTypeCounts(adjacentCell.getContents());
+			}
+		}
+	}
+
+	void updateAdjacentCellTypeCounts(Contents cellType) {
+		switch (cellType) {
+		case FALSE_FLAG:
+			++adjacentFalseFlags;
+			break;
+		case TRUE_FLAG:
+			++adjacentTrueFlags;
+			break;
+		default:
+			return;
+		}
+	}
+
+	public Contents getContents() {
+		return contents;
+	}
+
+	public int getAdjacentFalseFlags() {
+		return adjacentFalseFlags;
+	}
+
+	public int getAdjacentTrueFlags() {
+		return adjacentTrueFlags;
+	}
+
+	public boolean isRevealed() {
+		return revealed;
+	}
+
+	static int getRevealedCount() {
 		return revealedCount;
 	}
 
-	public static void resetRevealedCount() {
+	static void resetRevealedCount() {
 		revealedCount = 0;
-	}
-	
-	public final void setAdjacentCells(ArrayList<Cell> adjacentCells) {
-		this.adjacentCells = adjacentCells;
-	}
-	
-	public final void addAdjacentFlag() {
-		// Update symbol to indicate adjacent flag cell
-		symbol = String.format(EMPTY_CELL_SYMBOL, ++adjacentFlags, adjacentTreasure);
-		revealedColor = ADJACENT_OBJECT_COLOR;
-	}
-	
-	public final void addAdjacentTreasure() {
-		// Update symbol to indicate adjacent treasure cell
-		symbol = String.format(EMPTY_CELL_SYMBOL, adjacentFlags, ++adjacentTreasure);
-		revealedColor = ADJACENT_OBJECT_COLOR;
 	}
 
 	public void reveal() {
 		if (revealed)
 			return;
-		revealed = true;
-		revealedCount++;
-		
-		if (symbol.equals("0/0")) {
-			// Recursively reveal all touching "0/0" cells
-			for (Cell adjacentCell : adjacentCells) {
+		else {
+			revealed = true;
+			revealedCount++;
 
-				if (adjacentCell.symbol.equals("0/0")) {
-					adjacentCell.reveal();
+			if (contents == Contents.EMPTY) {
+				// Recursively reveal all touching EMPTY cells
+				for (Cell adjacentCell : adjacentCells) {
+
+					if (adjacentCell.contents == Contents.EMPTY) {
+						adjacentCell.reveal();
+					}
 				}
 			}
 		}
-	}
 
-	public String[] getContents() {
-		String[] contents = { String.valueOf(revealed), symbol, revealedColor };
-		return contents;
 	}
 }

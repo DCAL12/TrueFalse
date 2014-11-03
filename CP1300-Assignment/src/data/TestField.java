@@ -2,6 +2,8 @@ package data;
 
 import java.util.ArrayList;
 
+import data.Cell.Contents;
+
 public class TestField {
 
 	public static void main(String[] args) {
@@ -9,20 +11,20 @@ public class TestField {
 		printTest("Create new empty cell and get its contents\n"
 				+ "[revealed, symbol, color]", 
 				"[false, 0/0, 0x77f33b]");
-		Cell emptyCell = new Cell();
-		System.out.println(String.format("[%s, %s, %s]", emptyCell.getContents()[0], emptyCell.getContents()[1], emptyCell.getContents()[2]));
+		Cell emptyCell = new Cell(Contents.EMPTY);
+		System.out.println(String.format("[%s, %s, %s]", emptyCell.isRevealed(), emptyCell.getContents().getSymbol(), emptyCell.getContents().getColor()));
 		
-		printTest("Create new flag cell and get its contents\n"
+		printTest("Create new falseFlag cell and get its contents\n"
 				+ "[revealed, symbol, color]"
 				, "[false, F, 0xec402c]");
-		Cell flagCell = new Flag();
-		System.out.println(String.format("[%s, %s, %s]", flagCell.getContents()[0], flagCell.getContents()[1], flagCell.getContents()[2]));
+		Cell falseFlagCell = new Cell(Contents.FALSE_FLAG);
+		System.out.println(String.format("[%s, %s, %s]", falseFlagCell.isRevealed(), falseFlagCell.getContents().getSymbol(), falseFlagCell.getContents().getColor()));
 		
-		printTest("Create new treasure cell and get its contents\n"
+		printTest("Create new trueFlag cell and get its contents\n"
 				+ "[revealed, symbol, color]"
 				, "[false, T, 0x0044f7]");
-		Cell treasureCell = new Treasure();
-		System.out.println(String.format("[%s, %s, %s]", treasureCell.getContents()[0], treasureCell.getContents()[1], treasureCell.getContents()[2]));
+		Cell trueFlagCell = new Cell(Contents.TRUE_FLAG);
+		System.out.println(String.format("[%s, %s, %s]", trueFlagCell.isRevealed(), trueFlagCell.getContents().getSymbol(), trueFlagCell.getContents().getColor()));
 		
 		// Test the default field (Default size: 10x10, Difficulty: Easy (5% Flags, 1% Treasure)
 		printTest("Grid size after creating new, default Field", "10x10");
@@ -78,10 +80,15 @@ public class TestField {
 		for (int r = 0; r < Field.getSize().height; r++) {
 			for (int c = 0; c < Field.getSize().width; c++) {
 				if (showAll
-						|| Field.getCell(c, r).getContents()[0].equals("true")) {
+						|| Field.getCell(c, r).isRevealed()) {
 					// Print the revealed cell
-					System.out.print(Field.getCell(c, r).getContents()[1]
-							+ "\t");
+					Cell cell = Field.getCell(c, r);
+					String symbol = cell.getContents() == Contents.HAS_ADJACENT ? 
+							String.format(cell.getContents().getSymbol(),
+									cell.getAdjacentFalseFlags(),
+									cell.getAdjacentTrueFlags()) : 
+							cell.getContents().getSymbol();
+					System.out.print(symbol	+ "\t");
 				} else {
 					// Print the concealed ('X') cell
 					System.out.print("X\t");

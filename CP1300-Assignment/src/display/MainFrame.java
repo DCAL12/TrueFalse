@@ -3,8 +3,7 @@ package display;
 import java.awt.Dimension;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.awt.event.MouseListener;
-
+import java.awt.event.MouseAdapter;
 import javax.swing.ButtonGroup;
 import javax.swing.JCheckBoxMenuItem;
 import javax.swing.JFrame;
@@ -17,14 +16,15 @@ import data.Field;
 
 @SuppressWarnings("serial")
 public class MainFrame extends JFrame {
-
-	public final GameDisplay gameDisplay;
+	
+	private static GameDisplay gameDisplay;
 	private static SizeDialog sizeDialog;
 	private static JCheckBoxMenuItem[] difficultyChoices;
 
-	public MainFrame() {
+	public MainFrame(GameDisplay gameDisplay) {
 		// General setup
 		super("The True/False Game");
+		MainFrame.gameDisplay = gameDisplay;
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		setMinimumSize(new Dimension(500, 500));
 		setLocationRelativeTo(null);
@@ -68,11 +68,8 @@ public class MainFrame extends JFrame {
 		add(settingsLabel);
 		setJMenuBar(menuBar);
 
-		// Add gameDisplay
-		gameDisplay = new GameDisplay();
-		add(gameDisplay);
-
 		// Final setup
+		add(gameDisplay);
 		pack();
 		setLocationRelativeTo(null);
 	}
@@ -89,9 +86,9 @@ public class MainFrame extends JFrame {
 		}
 	}
 
-	public void addCellHandler(MouseListener listener) {
+	public void addCellHandler(MouseAdapter mouseAdapter) {
 		// Pass click actionListener to gameDisplay
-		gameDisplay.addMouseListener(listener);
+		gameDisplay.addMouseListener(mouseAdapter);
 	}
 
 	public Dimension getSizeSetting() {
@@ -105,7 +102,7 @@ public class MainFrame extends JFrame {
 		// Set difficulty check boxes to current field's difficulty
 		for (JCheckBoxMenuItem item : difficultyChoices) {
 			if (item.getActionCommand()
-					.equals(Field.getDifficulty().toString())) {
+					.equals(Field.getDifficulty())) {
 				item.setSelected(true);
 			} else {
 				item.setSelected(false);
