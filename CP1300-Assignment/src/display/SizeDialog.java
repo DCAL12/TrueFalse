@@ -26,9 +26,9 @@ public class SizeDialog extends JDialog {
 	private static JLabel columnLabel;
 	private static JSlider columnSlider;
 
-	public SizeDialog(MainFrame mainFrame) {
+	public SizeDialog() {
 		// General setup
-		super(mainFrame, true);
+		setModal(true);
 		settings = Field.DEFAULT_GRID_SIZE;
 		setResizable(false);
 
@@ -64,9 +64,9 @@ public class SizeDialog extends JDialog {
 		
 		// Configure layout panels
 		JPanel rows = new JPanel(new BorderLayout());
-		rows.setBorder(BorderFactory.createLineBorder(getBackground(), 10));
+		rows.setBorder(BorderFactory.createLineBorder(rows.getBackground(), 10));
 		JPanel columns = new JPanel(new BorderLayout());
-		columns.setBorder(BorderFactory.createLineBorder(getBackground(), 10));
+		columns.setBorder(BorderFactory.createLineBorder(columns.getBackground(), 10));
 
 		// Add components to sizeDialog
 		rows.add(rowLabel, BorderLayout.WEST);
@@ -79,7 +79,7 @@ public class SizeDialog extends JDialog {
 		
 		// Final setup
 		pack();
-		setLocationRelativeTo(mainFrame);
+		setLocationRelativeTo(null);
 	}
 
 	public Dimension getSettings() {

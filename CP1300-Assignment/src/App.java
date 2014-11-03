@@ -36,7 +36,7 @@ public class App {
 
 					@Override
 					public void actionPerformed(ActionEvent e) {
-						reset();
+						resetGameBySize();
 					}
 				});
 
@@ -46,14 +46,14 @@ public class App {
 					@Override
 					public void actionPerformed(ActionEvent e) {
 						switch (e.getActionCommand()) {
-						case "Easy":
-							reset(Difficulty.EASY);
+						case "easy":
+							resetGameByDifficulty(Difficulty.EASY);
 							break;
-						case "Medium":
-							reset(Difficulty.MEDIUM);
+						case "medium":
+							resetGameByDifficulty(Difficulty.MEDIUM);
 							break;
-						case "Hard":
-							reset(Difficulty.HARD);
+						case "hard":
+							resetGameByDifficulty(Difficulty.HARD);
 							break;
 						}
 					}
@@ -103,15 +103,15 @@ public class App {
 		});
 	}
 
-	private static void reset(Difficulty difficulty) {
+	private static void resetGameByDifficulty(Difficulty difficulty) {
 		// Start a new game of current size and chosen difficulty
 		new Field(mainFrame.getSizeSetting(), difficulty);
-		mainFrame.reset();
+		mainFrame.repaint();
 	}
 
-	private static void reset() {
+	private static void resetGameBySize() {
 		// Start a new game of chosen size and current difficulty
 		new Field(mainFrame.getSizeSetting(), Field.getDifficulty());
-		mainFrame.reset();
+		mainFrame.repaint();
 	}
 }
