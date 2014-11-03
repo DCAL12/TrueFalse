@@ -64,13 +64,13 @@ public class GameDisplay extends JPanel {
 			origin = new Point((int) (column * CELL_SIZE.getWidth()),
 					(int) (row * CELL_SIZE.getHeight()));
 			this.graphics = graphics;
-			String symbol = cell.getContents() == Contents.HAS_ADJACENT ? 
-					String.format(cell.getContents().getSymbol(),
+			String symbol = cell.getContents() == Contents.HAS_ADJACENT ? String
+					.format(cell.getContents().getSymbol(),
 							cell.getAdjacentFalseFlags(),
-							cell.getAdjacentTrueFlags()) : 
-					cell.getContents().getSymbol();
-			cellText = new CellText(symbol,
-					new Rectangle(origin, CELL_SIZE), graphics);
+							cell.getAdjacentTrueFlags()) : cell.getContents()
+					.getSymbol();
+			cellText = new CellText(symbol, new Rectangle(origin, CELL_SIZE),
+					graphics);
 		}
 
 		void draw() {
@@ -95,10 +95,6 @@ public class GameDisplay extends JPanel {
 	}
 
 	private static final Dimension CELL_SIZE = new Dimension();
-
-	public GameDisplay() {
-		setPreferredSize(new Dimension(600, 600));
-	}
 
 	public Dimension getCellSize() {
 		return CELL_SIZE;
