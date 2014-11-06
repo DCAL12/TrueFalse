@@ -1,90 +1,155 @@
 package data;
 
+import java.awt.Color;
 import java.util.ArrayList;
 
 public class Cell {
-
-	public enum Contents {
-		EMPTY("0/0", "0x77f33b"), HAS_ADJACENT("%d/%d", "0x808080"), TRUE_FLAG(
-				"T", "0x0044f7"), FALSE_FLAG("F", "0xec402c");
-
-		private String symbol, color;
-
-		Contents(String symbol, String color) {
-			this.symbol = symbol;
-			this.color = color;
-		}
-
-		public String getSymbol() {
-			return symbol;
-		}
-
-		public String getColor() {
-			return color;
-		}
-	}
-
-	private Contents contents;
-	private ArrayList<Cell> adjacentCells;
-	private int adjacentFalseFlags;
-	private int adjacentTrueFlags;
-	private boolean revealed;
+	
 	private static int revealedCount = 0;
-
-	Cell(Contents cellType) {
-		contents = cellType;
+	
+	private CellType cellType;
+	private Contents contents;
+	private ArrayList<Behavior> behaviors;
+	private boolean revealed;
+	private ArrayList<Cell> adjacentCells;
+	
+	public enum Behavior {
+		COUNTED, COUNT_ADJACENT, AUTO_REVEALED_BY_ADJACENT, KILL_ON_REVEAL;
 	}
+	
+	public enum CellType { 
+		EMPTY("0x77f33b", "0/0", 0, 
+				Behavior.COUNT_ADJACENT, 
+				Behavior.AUTO_REVEALED_BY_ADJACENT),
+		FALSE_FLAG("0xec402c", "F", 1,
+				Behavior.COUNTED,
+				Behavior.KILL_ON_REVEAL),
+		TRUE_FLAG("0x0044f7", "T", 1,
+				Behavior.COUNTED);
 
-	void setAdjacentCells(ArrayList<Cell> adjacentCells) {
-		this.adjacentCells = adjacentCells;
-		updateContents();
-	}
-
-	void updateContents() {
-		for (Cell adjacentCell : adjacentCells) {
-			if (adjacentCell.getContents() == Contents.TRUE_FLAG
-					|| adjacentCell.getContents() == Contents.FALSE_FLAG) {
-				contents = Contents.HAS_ADJACENT;
-				updateAdjacentCellTypeCounts(adjacentCell.getContents());
+		static final CellType DEFAULT = EMPTY;
+		private final ArrayList<Behavior> defaultBehaviors = new ArrayList<>();
+		private Color backgroundColor;
+		private String symbol;
+		private int minimumCount;
+		
+		static ArrayList<CellType> getMandatoryCellTypes() {
+			ArrayList<CellType> mandatoryCellTypes = new ArrayList<>();
+			for (CellType cellType : CellType.values()) {
+				if (cellType.getMinimumCount() > 0) {
+					mandatoryCellTypes.add(cellType);
+				}
+			}
+			return mandatoryCellTypes;
+		}
+		
+		static ArrayList<CellType> getcellTypesToCount() {
+			ArrayList<CellType> countedCellTypes = new ArrayList<>();
+			for (CellType cellType : CellType.values()) {
+				if (cellType.defaultBehaviors.contains(Behavior.COUNTED)) {
+					countedCellTypes.add(cellType);
+				}
+			}
+			return countedCellTypes;
+		}
+		
+		CellType(String color, 
+				String symbol,
+				int minimumCount,
+				Behavior ... behaviors) {
+			
+			backgroundColor = Color.decode(color);
+			this.symbol = symbol;
+			this.minimumCount = minimumCount;
+			for (Behavior behavior : behaviors) {
+				defaultBehaviors.add(behavior);
 			}
 		}
-	}
-
-	void updateAdjacentCellTypeCounts(Contents cellType) {
-		switch (cellType) {
-		case FALSE_FLAG:
-			++adjacentFalseFlags;
-			break;
-		case TRUE_FLAG:
-			++adjacentTrueFlags;
-			break;
-		default:
-			return;
+		
+		int getMinimumCount() {
+			return minimumCount;
 		}
 	}
-
-	public Contents getContents() {
-		return contents;
+	
+	Cell(CellType cellType) {
+		this.cellType = cellType;
+		contents = new Contents();
+		behaviors = new ArrayList<>();
+		behaviors.addAll(cellType.defaultBehaviors);
 	}
-
-	public int getAdjacentFalseFlags() {
-		return adjacentFalseFlags;
-	}
-
-	public int getAdjacentTrueFlags() {
-		return adjacentTrueFlags;
-	}
-
-	public boolean isRevealed() {
-		return revealed;
-	}
-
+	
 	static int getRevealedCount() {
 		return revealedCount;
 	}
 
 	static void resetRevealedCount() {
 		revealedCount = 0;
+	}
+	
+	boolean isType(CellType cellType) {
+		return (this.cellType == cellType);
+	}
+	
+	void addAdjacentCells(ArrayList<Cell> adjacentCells) {
+		this.adjacentCells = adjacentCells;
+		contents.update();
+	}
+	
+	public boolean hasBehavior(Behavior behavior) {
+		return behaviors.contains(behavior);
+	}
+	
+	public Contents getContents() {
+		if (revealed) {
+			return contents;
+		}
+		return null;
+	}
+	
+	public class Contents {
+		private Color backgroundColor;
+		private String symbol;
+		
+		private Contents() {
+			backgroundColor = cellType.backgroundColor;
+			symbol = cellType.symbol;
+		}
+		
+		public Color getBackgroundColor() {
+			return backgroundColor;
+		}
+		
+		public String getSymbol() {
+			return symbol;
+		}
+		
+		private void update() {
+			// Set cell symbol to display countable adjacent cells by type
+			
+			StringBuilder stringBuilder = new StringBuilder();
+			String seperator = "/";
+			for (CellType countableCellType : CellType.getcellTypesToCount()) {
+				stringBuilder.append(countAdjacentCellsByType(countableCellType) + seperator); 	
+			}
+			stringBuilder.deleteCharAt(
+					stringBuilder.lastIndexOf(seperator)); // Trailing separator not necessary
+			
+			if (!stringBuilder.toString().equals(CellType.EMPTY.symbol)) {
+				backgroundColor = Color.decode("0x808080");
+				symbol = stringBuilder.toString();
+				behaviors.remove(Behavior.AUTO_REVEALED_BY_ADJACENT);
+			}
+		}
+		
+		private int countAdjacentCellsByType(CellType type) {
+			int count = 0;
+			for (Cell adjacentCell : adjacentCells) {
+				if (adjacentCell.isType(type)) {
+					count++;
+				}
+			}
+			return count;
+		}
 	}
 
 	public void reveal() {
@@ -94,16 +159,15 @@ public class Cell {
 			revealed = true;
 			revealedCount++;
 
-			if (contents == Contents.EMPTY) {
-				// Recursively reveal all touching EMPTY cells
+			if (behaviors.contains(Behavior.AUTO_REVEALED_BY_ADJACENT)) {
+				// Recursively reveal all touching auto-revealing cells
 				for (Cell adjacentCell : adjacentCells) {
 
-					if (adjacentCell.contents == Contents.EMPTY) {
+					if (adjacentCell.behaviors.contains(Behavior.AUTO_REVEALED_BY_ADJACENT)) {
 						adjacentCell.reveal();
 					}
 				}
 			}
 		}
-
 	}
 }

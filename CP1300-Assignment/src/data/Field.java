@@ -1,10 +1,13 @@
 package data;
 
 import java.awt.Dimension;
+import java.awt.Point;
 import java.util.ArrayList;
+import java.util.HashMap;
 
-import data.Cell.Contents;
-import utility.Random;
+import data.Cell.CellType;
+
+import java.util.Random;
 
 public class Field {
 
@@ -13,26 +16,21 @@ public class Field {
 	public static final Dimension DEFAULT_GRID_SIZE = MAX_GRID_SIZE;
 
 	public enum Difficulty {
-		EASY(5, 1), MEDIUM(10, 5), HARD(20, 10);
+		EASY(1, 5), MEDIUM(5, 10), HARD(10, 20);
+		
+		private final HashMap<CellType, Integer> percentCellsByType = new HashMap<>();
 
-		final int MIN_TRUE_FLAGS = 1;
-		final int MIN_FALSE_FLAGS = 1;
-		private int percentTrueFlags;
-		private int percentFalseFlags;
-
-		Difficulty(int percentTrueFlags, int percentFalseFlags) {
-			this.percentTrueFlags = percentTrueFlags;
-			this.percentFalseFlags = percentFalseFlags;
+		Difficulty(int ... cellPercentages) {
+			ArrayList<CellType> mandatoryCellTypes = CellType.getMandatoryCellTypes();
+			for (int i = 0; i < mandatoryCellTypes.size(); i++) {
+				percentCellsByType.put(mandatoryCellTypes.get(i), cellPercentages[i]);
+			}
 		}
 
-		int getNumTrueFlags(int totalCells) {
-			return Math.max((int) (percentTrueFlags / 100.0 * totalCells),
-					MIN_TRUE_FLAGS);
-		}
-
-		int getNumFalseFlags(int totalCells) {
-			return Math.max((int) (percentFalseFlags / 100.0 * totalCells),
-					MIN_FALSE_FLAGS);
+		int getCellCountByType(CellType cellType) {
+			// Max function ensures minimum cell count for mandatory cell types
+			return Math.max((int) (percentCellsByType.get(cellType) / 100.0 * cellCount),
+					cellType.getMinimumCount());
 		}
 	}
 
@@ -40,7 +38,7 @@ public class Field {
 	private static Difficulty difficulty;
 	private static Cell[][] cellGrid;
 	private static boolean isPlaying;
-	private static int cellCount, falseFlagCount, trueFlagCount;
+	private static int cellCount;
 
 	public Field() {
 		size = DEFAULT_GRID_SIZE;
@@ -58,87 +56,44 @@ public class Field {
 		cellGrid = new Cell[size.width][size.height];
 		cellCount = size.width * size.height;
 		Cell.resetRevealedCount();
-		falseFlagCount = difficulty.getNumFalseFlags(cellCount);
-		trueFlagCount = difficulty.getNumTrueFlags(cellCount);
 		populateGrid();
 		updateAdjacentCells();
 		isPlaying = true;
 	}
-
-	public static boolean isPlaying() {
-		return isPlaying;
-	}
-
-	public static void endGame() {
-		isPlaying = false;
-	}
-
-	public static boolean isClear() {
-		return (cellCount - falseFlagCount - Cell.getRevealedCount() == 0);
-	}
-
-	public static Dimension getSize() {
-		return size;
-	}
-
-	public static Difficulty getDifficulty() {
-		return difficulty;
-	}
-
-	public static Cell getCell(int x, int y) {
-		return cellGrid[x][y];
-	}
-
-	public static ArrayList<Cell> getCellList() {
-		// Get list of all cells in grid for convenient access
-		ArrayList<Cell> cellList = new ArrayList<>();
-		for (int y = 0; y < size.height; y++) {
-			for (int x = 0; x < size.width; x++) {
-				cellList.add(cellGrid[x][y]);
+	
+	private void populateGrid() {
+		ArrayList<CellType> mandatoryCellTypes = CellType.getMandatoryCellTypes();
+		Random random = new Random();
+		// Place required number of each cell type in random, null cells
+		for (CellType cellType : mandatoryCellTypes) {
+			for (int i = 0; i < difficulty.getCellCountByType(cellType);) {
+				
+				int randomColumn = random.nextInt(size.width);
+				int randomRow = random.nextInt(size.height);
+				
+				if (cellGrid[randomColumn][randomRow] == null) {
+					cellGrid[randomColumn][randomRow] = new Cell(cellType);
+					i++;
+				}
 			}
 		}
-		return cellList;
-	}
 
-	private void populateGrid() {
-		// Fill the grid with flags and treasure according to difficulty
-
-		// Get lists of unique, random locations for flags and treasure
-		ArrayList<Integer> falseFlagLocations = Random.getRandomInts(0,
-				cellCount - 1, falseFlagCount, true);
-		ArrayList<Integer> trueFlagLocations = Random.getRandomInts(0,
-				cellCount - 1, trueFlagCount, true, falseFlagLocations);
-
-		// Populate cells using random flag and treasure locations
-		Integer cellNum = 0;
+		// Remaining cells will be of the default type
 		for (int y = 0; y < size.height; y++) {
 			for (int x = 0; x < size.width; x++) {
-
-				if (falseFlagLocations.contains(cellNum)) {
-					cellGrid[x][y] = new Cell(Contents.FALSE_FLAG);
+				if (cellGrid[x][y] == null) {
+					cellGrid[x][y] = new Cell(CellType.DEFAULT);
 				}
-
-				else if (trueFlagLocations.contains(cellNum)) {
-					cellGrid[x][y] = new Cell(Contents.TRUE_FLAG);
-				}
-
-				else {
-					cellGrid[x][y] = new Cell(Contents.EMPTY);
-				}
-				cellNum++;
 			}
 		}
 	}
 
 	private void updateAdjacentCells() {
-		// Update empty cells with surrounding cell list
-
 		for (int y = 0; y < size.height; y++) {
 			for (int x = 0; x < size.width; x++) {
-
-				if (cellGrid[x][y].getContents() == Contents.EMPTY) {
+				if (cellGrid[x][y].isType(CellType.EMPTY)) {
 					ArrayList<Cell> adjacentCells = getAdjacentCells(x, y);
-					cellGrid[x][y].setAdjacentCells(adjacentCells);
+					cellGrid[x][y].addAdjacentCells(adjacentCells);
 				}
 			}
 		}
@@ -166,5 +121,42 @@ public class Field {
 			}
 		}
 		return adjacentCells;
+	}
+
+	public static boolean isPlaying() {
+		return isPlaying;
+	}
+	
+	public static Dimension getSize() {
+		return size;
+	}
+
+	public static Difficulty getDifficulty() {
+		return difficulty;
+	}
+
+	public static Cell getCell(Point coordinate) {
+		return cellGrid[coordinate.x][coordinate.y];
+	}
+
+	public static ArrayList<Cell> getCellList() {
+		// Get list of all cells in grid for convenient access
+		ArrayList<Cell> cellList = new ArrayList<>();
+		for (int y = 0; y < size.height; y++) {
+			for (int x = 0; x < size.width; x++) {
+				cellList.add(cellGrid[x][y]);
+			}
+		}
+		return cellList;
+	}
+
+	public static boolean isClear() {
+		return (cellCount 
+				- difficulty.getCellCountByType(CellType.FALSE_FLAG) 
+				- Cell.getRevealedCount() == 0);
+	}
+	
+	public static void endGame() {
+		isPlaying = false;
 	}
 }

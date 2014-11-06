@@ -1,3 +1,4 @@
+import java.awt.Point;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
@@ -7,7 +8,7 @@ import javax.swing.JOptionPane;
 import javax.swing.SwingUtilities;
 
 import data.Cell;
-import data.Cell.Contents;
+import data.Cell.Behavior;
 import data.Field;
 import data.Field.Difficulty;
 import display.GameDisplay;
@@ -73,12 +74,13 @@ public class App {
 						}
 
 						// Reveal cell from x,y coordinate of mouse click
-						int column = (int) (e.getX() / (double) gameDisplay.getWidth() * Field.getSize().width);
-						int row = (int) (e.getY() / (double) gameDisplay.getHeight() * Field.getSize().height);						
-						Cell selectedCell = Field.getCell(column, row);
+						Point clickCoordinate = new Point(
+								(int) (e.getX() / (double) gameDisplay.getWidth() * Field.getSize().width),
+								(int) (e.getY() / (double) gameDisplay.getHeight() * Field.getSize().height));						
+						Cell selectedCell = Field.getCell(clickCoordinate);
 						selectedCell.reveal();
 
-						if (selectedCell.getContents() == Contents.FALSE_FLAG) {
+						if (selectedCell.hasBehavior(Behavior.KILL_ON_REVEAL)) {
 							// Reveal all cells
 							for (Cell cell : Field.getCellList()) {
 								cell.reveal();
