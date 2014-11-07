@@ -19,7 +19,41 @@ import data.Field.Difficulty;
 @SuppressWarnings("serial")
 public class MainFrame extends JFrame {
 	
+	private static final JMenuBar menuBar = new JMenuBar();
+	private static final SettingsMenu settingsMenu = new SettingsMenu();
+	private static GameDisplay gameDisplay;
+	
+
+	public MainFrame(GameDisplay gameDisplay) {
+		// General setup
+		super("The True/False Game");
+		MainFrame.gameDisplay = gameDisplay;
+		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		setMinimumSize(new Dimension(500, 500));
+		setLocationRelativeTo(null);
+
+		// Add frame components
+		menuBar.add(settingsMenu);
+		add(SettingsMenu.settingsLabel);
+		setJMenuBar(menuBar);
+		add(gameDisplay);
+		
+		// Final setup
+		pack();
+		setLocationRelativeTo(null);
+	}
+	
 	static class SettingsMenu extends JMenu {
+		
+		final static JLabel settingsLabel = new JLabel("Settings");
+		final static SizeMenu sizeMenu = new SizeMenu();
+		final static DifficultyMenu difficultyMenu = new DifficultyMenu();
+		
+		SettingsMenu() {
+			super("Settings");
+			add(sizeMenu);
+			add(difficultyMenu);
+		}
 		
 		static class SizeMenu extends JMenuItem {
 			final static SizeDialog sizeDialog = new SizeDialog();
@@ -54,46 +88,11 @@ public class MainFrame extends JFrame {
 				}
 			}
 		}
-		
-		
-		final static JLabel settingsLabel = new JLabel("Settings");
-		final static SizeMenu sizeMenu = new SizeMenu();
-		final static DifficultyMenu difficultyMenu = new DifficultyMenu();
-		
-		SettingsMenu() {
-			super("Settings");
-			add(sizeMenu);
-			add(difficultyMenu);
-		}
-	}
-	
-	private static final JMenuBar menuBar = new JMenuBar();
-	private static final SettingsMenu settingsMenu = new SettingsMenu();
-	private static GameDisplay gameDisplay;
-	
-
-	public MainFrame(GameDisplay gameDisplay) {
-		// General setup
-		super("The True/False Game");
-		MainFrame.gameDisplay = gameDisplay;
-		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-		setMinimumSize(new Dimension(500, 500));
-		setLocationRelativeTo(null);
-
-		// Add frame components
-		menuBar.add(settingsMenu);
-		add(SettingsMenu.settingsLabel);
-		setJMenuBar(menuBar);
-		add(gameDisplay);
-		
-		// Final setup
-		pack();
-		setLocationRelativeTo(null);
 	}
 
 	public void addSizeHandler(ActionListener listener) {
 		// Pass "okay" actionListener to sizeDialog
-		SettingsMenu.SizeMenu.sizeDialog.addSizeHandler(listener);
+		SettingsMenu.SizeMenu.sizeDialog.addHandler(listener);
 	}
 
 	public void addDifficultyHandler(ActionListener listener) {

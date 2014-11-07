@@ -13,6 +13,13 @@ public class Cell {
 	private boolean revealed;
 	private ArrayList<Cell> adjacentCells;
 	
+	Cell(CellType cellType) {
+		this.cellType = cellType;
+		contents = new Contents();
+		behaviors = new ArrayList<>();
+		behaviors.addAll(cellType.defaultBehaviors);
+	}
+	
 	public enum Behavior {
 		COUNTED, COUNT_ADJACENT, AUTO_REVEALED_BY_ADJACENT, KILL_ON_REVEAL;
 	}
@@ -32,6 +39,19 @@ public class Cell {
 		private Color backgroundColor;
 		private String symbol;
 		private int minimumCount;
+		
+		CellType(String color, 
+				String symbol,
+				int minimumCount,
+				Behavior ... behaviors) {
+			
+			backgroundColor = Color.decode(color);
+			this.symbol = symbol;
+			this.minimumCount = minimumCount;
+			for (Behavior behavior : behaviors) {
+				defaultBehaviors.add(behavior);
+			}
+		}
 		
 		static ArrayList<CellType> getMandatoryCellTypes() {
 			ArrayList<CellType> mandatoryCellTypes = new ArrayList<>();
@@ -53,30 +73,12 @@ public class Cell {
 			return countedCellTypes;
 		}
 		
-		CellType(String color, 
-				String symbol,
-				int minimumCount,
-				Behavior ... behaviors) {
-			
-			backgroundColor = Color.decode(color);
-			this.symbol = symbol;
-			this.minimumCount = minimumCount;
-			for (Behavior behavior : behaviors) {
-				defaultBehaviors.add(behavior);
-			}
-		}
-		
 		int getMinimumCount() {
 			return minimumCount;
 		}
 	}
 	
-	Cell(CellType cellType) {
-		this.cellType = cellType;
-		contents = new Contents();
-		behaviors = new ArrayList<>();
-		behaviors.addAll(cellType.defaultBehaviors);
-	}
+	
 	
 	static int getRevealedCount() {
 		return revealedCount;

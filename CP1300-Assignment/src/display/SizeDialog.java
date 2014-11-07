@@ -15,81 +15,56 @@ import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 
 import data.Field;
+import display.SizeDialog.Control;
 
 @SuppressWarnings("serial")
 public class SizeDialog extends JDialog {
 
+	private static ControlPanel rows;
+	private static ControlPanel columns;
 	private static JButton okay;
-	private static Dimension settings;
-	private static JLabel rowLabel;
-	private static JSlider rowSlider;
-	private static JLabel columnLabel;
-	private static JSlider columnSlider;
-
-	public SizeDialog() {
-		// General setup
-		setModal(true);
-		settings = Field.DEFAULT_GRID_SIZE;
-		setResizable(false);
-
-		// Construct rows selector
-		rowLabel = new JLabel("rows: " + settings.height);
-		rowSlider = new JSlider(Field.MIN_GRID_SIZE.height,
-				Field.MAX_GRID_SIZE.height);
-		rowSlider.setValue(settings.height);
-		rowSlider.addChangeListener(new ChangeListener() {
-			// Update label and settings as slider moves
-			@Override
-			public void stateChanged(ChangeEvent moveSlider) {
-				settings.height = rowSlider.getValue();
-				rowLabel.setText("rows: " + settings.height);
-			}
-		});
-
-		// Construct columns selector
-		columnLabel = new JLabel("columns: " + settings.width);
-		columnSlider = new JSlider(Field.MIN_GRID_SIZE.width,
-				Field.MAX_GRID_SIZE.width);
-		columnSlider.setValue(settings.width);
-		columnSlider.addChangeListener(new ChangeListener() {
-			// Update label and settings as slider moves
-			@Override
-			public void stateChanged(ChangeEvent moveSlider) {
-				settings.width = columnSlider.getValue();
-				columnLabel.setText("columns: " + settings.width);
-			}
-		});
+	
+	enum Control {
+		ROWS(Field.MIN_GRID_SIZE.height, Field.MAX_GRID_SIZE.height, Field.DEFAULT_GRID_SIZE.height), 
+		COLUMNS(Field.MIN_GRID_SIZE.width, Field.MAX_GRID_SIZE.width, Field.DEFAULT_GRID_SIZE.width);
 		
+		private int minimum;
+		private int maximum;
+		private int initialValue;
+		
+		Control(int min, int max, int value) {
+			minimum = min;
+			maximum = max;
+			initialValue = value;
+		}
+		
+		int getMinimum() {
+			return minimum;
+		}
+		
+		int getMaximum() {
+			return maximum;
+		}
+		
+		int getInitialValue() {
+			return initialValue;
+		}
+	}
+	
+	static {
+		rows = new ControlPanel(Control.ROWS);
+		columns = new ControlPanel(Control.COLUMNS);
 		okay = new JButton("okay");
+	}
+	
+	public SizeDialog() {
+		setModal(true);
+		setResizable(false);
 		
-		// Configure layout panels
-		JPanel rows = new JPanel(new BorderLayout());
-		rows.setBorder(BorderFactory.createLineBorder(rows.getBackground(), 10));
-		JPanel columns = new JPanel(new BorderLayout());
-		columns.setBorder(BorderFactory.createLineBorder(columns.getBackground(), 10));
-
-		// Add components to sizeDialog
-		rows.add(rowLabel, BorderLayout.WEST);
-		rows.add(rowSlider, BorderLayout.EAST);
-		columns.add(columnLabel, BorderLayout.WEST);
-		columns.add(columnSlider, BorderLayout.EAST);
 		add(rows, BorderLayout.NORTH);
 		add(columns, BorderLayout.CENTER);
 		add(okay, BorderLayout.SOUTH);
 		
-		// Final setup
-		pack();
-		setLocationRelativeTo(null);
-	}
-
-	public Dimension getSettings() {
-		return settings;
-	}
-
-	public void addSizeHandler(ActionListener listener) {
-		// Handle "okay" button press
-		okay.addActionListener(listener); // Listener for controller
-
 		okay.addActionListener(new ActionListener() {
 			// Hide size dialog when "okay" is pressed
 			@Override
@@ -97,5 +72,52 @@ public class SizeDialog extends JDialog {
 				setVisible(false);
 			}
 		});
+
+		pack();
+		setLocationRelativeTo(null);
+	}
+
+	public Dimension getSettings() {
+		return new Dimension(columns.getSetting(), rows.getSetting());
+	}
+
+	public void addHandler(ActionListener listener) {
+		// Handle "okay" button press
+		okay.addActionListener(listener);
+	}
+}
+
+@SuppressWarnings("serial")
+class ControlPanel extends JPanel{
+
+	private JLabel label;
+	private JSlider slideControl;
+
+	ControlPanel(Control control) {		
+		super(new BorderLayout());
+		slideControl = new JSlider(control.getMinimum(), control.getMaximum(), control.getInitialValue());
+		slideControl.setName(control.toString().toLowerCase());
+		slideControl.addChangeListener(new ChangeListener() {
+			// Handle changing slideControl position
+			@Override
+			public void stateChanged(ChangeEvent moveSlider) {
+				label.setText(getLabelText());
+			}
+		});
+		
+		label = new JLabel(getLabelText());
+		
+		setBorder(BorderFactory.createLineBorder(getBackground(), 10));
+		add(label, BorderLayout.WEST);
+		add(slideControl, BorderLayout.EAST);
+	}
+	
+	private String getLabelText() {
+		return slideControl.getName() + ": " 
+				+ slideControl.getValue();
+	}
+	
+	int getSetting() {
+		return slideControl.getValue();
 	}
 }
